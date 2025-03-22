@@ -3,3 +3,4 @@ logs/*
 *.bat
 *.exe
 files/*
+data.sql
