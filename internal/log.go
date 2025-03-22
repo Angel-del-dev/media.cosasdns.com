@@ -19,7 +19,7 @@ func Log(app *models.Application, message string) {
 		log.Println(err)
 	}
 	defer f.Close()
-
+	log.Println(message)
 	if _, err := f.WriteString(fmt.Sprintf("%s %s %s\n", time.Now().Format("2006-01-02"), time.Now().Format("15:04:05"), message)); err != nil {
 		log.Println(err)
 	}
