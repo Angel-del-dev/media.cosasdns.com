@@ -19,7 +19,7 @@ func InitWebHandler(app *models.Application) {
 
 	mux.HandleFunc("/file/{application}/{resource}", func(writter http.ResponseWriter, request *http.Request) { api.GetResource(writter, request, app) })
 	mux.HandleFunc("/favicon.ico", doNothing)
-	mux.HandleFunc("/", ServeHome)
+	mux.HandleFunc("/", func(writter http.ResponseWriter, request *http.Request) { ServeHome(writter, request, app) })
 
 	server := http.Server{
 		Addr:    fmt.Sprintf(":%d", app.Port),

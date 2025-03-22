@@ -30,7 +30,7 @@ func GetResource(writter http.ResponseWriter, request *http.Request, app *models
 
 	query_error := db.QueryRow(query, request.PathValue("application"), request.PathValue("resource")).Scan(&file_type)
 	if query_error != nil {
-		internal.Log(app, fmt.Sprintf("Error obtaining resource"))
+		internal.Log(app, fmt.Sprintf("Error obtaining resource '%s'", request.URL.Path))
 		writter.WriteHeader(http.StatusNotFound)
 		return
 	}
