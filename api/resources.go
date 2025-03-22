@@ -9,6 +9,8 @@ import (
 	"media.cosasdns.com/models"
 )
 
+// TODO Handle files with encryption/decryption
+
 func GetResource(writter http.ResponseWriter, request *http.Request, app *models.Application) {
 	// Add method control and log
 	db, err := internal.DB(app)
