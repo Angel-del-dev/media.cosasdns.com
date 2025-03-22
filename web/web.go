@@ -15,9 +15,18 @@ func InitWebHandler(app *models.Application) {
 	internal.Log(app, "Starting http server")
 	internal.Log(app, fmt.Sprintf("Started on port :%d", app.Port))
 
-	http.HandleFunc("/file/{application}/{resource}", func(writter http.ResponseWriter, request *http.Request) { api.GetResource(writter, request, app) })
-	http.HandleFunc("/favicon.ico", doNothing)
-	err := http.ListenAndServe(fmt.Sprintf(":%d", app.Port), nil)
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/file/{application}/{resource}", func(writter http.ResponseWriter, request *http.Request) { api.GetResource(writter, request, app) })
+	mux.HandleFunc("/favicon.ico", doNothing)
+	mux.HandleFunc("/", ServeHome)
+
+	server := http.Server{
+		Addr:    fmt.Sprintf(":%d", app.Port),
+		Handler: mux,
+	}
+
+	err := server.ListenAndServe()
 	if err != nil {
 		internal.Log(app, "Could not start the server")
 	}
