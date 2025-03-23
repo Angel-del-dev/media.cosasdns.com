@@ -13,6 +13,7 @@ export const Request = async ({
         method
     }
     if(!['GET'].includes(method.toUpperCase())) params.body = new URLSearchParams(data);
+    if(localStorage.getItem('auth') !== null) params.headers.Authorization = `bearer ${localStorage.getItem('auth')}`
 
     return await fetch(route, params)
         .then(r =>  r.ok || r.status === 400 ? r.json() : { message: r.statusText })

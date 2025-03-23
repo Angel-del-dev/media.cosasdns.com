@@ -23,6 +23,7 @@ func InitWebHandler(app *models.Application) {
 	mux.HandleFunc("/file/{application}/{resource}", func(writter http.ResponseWriter, request *http.Request) { api.GetResource(writter, request, app) })
 	mux.HandleFunc("/favicon.ico", doNothing)
 	mux.HandleFunc("/login", func(writter http.ResponseWriter, request *http.Request) { Login(writter, request, app) })
+	mux.HandleFunc("/panel", func(writter http.ResponseWriter, request *http.Request) { Panel(writter, request, app) })
 	mux.HandleFunc("/", func(writter http.ResponseWriter, request *http.Request) { ServeHome(writter, request, app) })
 
 	server := http.Server{

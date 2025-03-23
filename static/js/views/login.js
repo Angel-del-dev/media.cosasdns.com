@@ -19,7 +19,7 @@ const do_login = async e => {
         ErrorNode.classList.remove('d-none');
         return;
     }
-
+    location.href = '/panel';
 };
 
 document.getElementById('SignIn').addEventListener('click', do_login);
