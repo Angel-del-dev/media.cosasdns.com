@@ -10,6 +10,7 @@ import (
 )
 
 // TODO Handle files with encryption/decryption
+// TODO Limit application max size (Based on a plan?)
 
 func GetResource(writter http.ResponseWriter, request *http.Request, app *models.Application) {
 	// Add method control and log

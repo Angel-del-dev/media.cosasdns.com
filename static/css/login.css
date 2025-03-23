@@ -1,0 +1,19 @@
+#root,
+#login-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#login-box {
+    width: fit-content;
+    
+    height: fit-content;
+    min-height: 10vmin;
+    padding: 10px;
+    background-color: whitesmoke;
+    border-radius: var(--app-border-radius);
+
+    flex-direction: column;
+    gap: 10px;
+}

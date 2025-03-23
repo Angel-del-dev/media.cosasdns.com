@@ -1,0 +1,10 @@
+:root {
+    --app-background-color: #171717;
+    --app-border-radius: 5px;
+
+    --primary-background-color: #0099CC;
+    --primary-color: white;
+
+    --danger-background-color: #B33F40;
+    --danger-color: white;
+}
