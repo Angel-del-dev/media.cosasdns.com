@@ -11,7 +11,11 @@ import (
 func ServeHome(writter http.ResponseWriter, request *http.Request, app *models.Application) {
 	if request.URL.Path != "/" {
 		internal.Log(app, fmt.Sprintf("Invalid route '%s'", request.URL.Path))
-		http.Redirect(writter, request, "/", http.StatusSeeOther)
+		if internal.CheckMethod(writter, request, "GET") {
+			http.Redirect(writter, request, "/", http.StatusSeeOther)
+		} else {
+			writter.WriteHeader(http.StatusNotFound)
+		}
 		return
 	}
 	// TODO Create home page

@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"media.cosasdns.com/api"
 	"media.cosasdns.com/internal"
 	"media.cosasdns.com/models"
 )
@@ -26,5 +27,13 @@ func ServeLogin(writter http.ResponseWriter, request *http.Request, app *models.
 		internal.Log(app, "Coul not serve 'login' view")
 		http.Redirect(writter, request, "/", http.StatusSeeOther)
 		return
+	}
+}
+
+func Login(writter http.ResponseWriter, request *http.Request, app *models.Application) {
+	if request.Method == "GET" {
+		ServeLogin(writter, request, app)
+	} else {
+		api.HandleLogin(writter, request, app)
 	}
 }

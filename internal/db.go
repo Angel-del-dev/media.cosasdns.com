@@ -38,3 +38,24 @@ func DB(app *models.Application) (*sql.DB, bool) {
 	}
 	return db, false
 }
+
+func RefreshToken(app *models.Application, User int) string {
+	token := GenerateToken()
+
+	db, error_bool := DB(app)
+	if error_bool {
+		return ""
+	}
+
+	stmt, err := db.Prepare("UPDATE USERS SET TOKEN = ? WHERE USER = ?")
+	if err != nil {
+		Log(app, "Could not create prepared statement for token storage")
+	}
+
+	_, err = stmt.Exec(token, User)
+	if err != nil {
+		Log(app, "Could not execute token storage")
+	}
+
+	return token
+}
