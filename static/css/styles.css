@@ -71,6 +71,9 @@ button:hover {
 .d-none {
     display: none !important;
 }
+.pointer:hover {
+    cursor: pointer;
+}
 
 .text-center { text-align: center; }
 .text-right { text-align: right; }

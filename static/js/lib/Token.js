@@ -6,7 +6,6 @@ export const check_valid_domain = async () => {
 
     const { message } = await Request({ route: '/check-token', data: { Token } });
     
-    if(message !== '') {
-        return location.href = '/login';
-    }
+    if(message !== '') { location.href = '/login'; }
+    return message === '';
 };

@@ -22,6 +22,9 @@ func InitWebHandler(app *models.Application) {
 
 	// Api calls
 	mux.HandleFunc("/check-token", func(writter http.ResponseWriter, request *http.Request) { api.CheckToken(writter, request, app) })
+	mux.HandleFunc("/get-user-applications", func(writter http.ResponseWriter, request *http.Request) {
+		api.GetUserApplications(writter, request, app)
+	})
 	// Other calls
 
 	mux.HandleFunc("/file/{application}/{resource}", func(writter http.ResponseWriter, request *http.Request) { api.GetResource(writter, request, app) })
