@@ -6,10 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"media.cosasdns.com/models"
 )
+
+func GetBearerToken(request *http.Request) string {
+	return strings.Trim(strings.Replace(request.Header.Get("Authorization"), "Bearer", "", -1), " ")
+}
 
 func Hash(text string) string {
 	hash := md5.Sum([]byte(text))

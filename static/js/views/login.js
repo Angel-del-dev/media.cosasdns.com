@@ -22,4 +22,5 @@ const do_login = async e => {
     location.href = '/panel';
 };
 
+localStorage.removeItem('auth');
 document.getElementById('SignIn').addEventListener('click', do_login);
