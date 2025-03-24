@@ -19,6 +19,12 @@ const get_applications = async () => {
     });
 };
 
+const create_application = async () => {
+    const { message } = await Request({ route: '/create-application', data: {} });
+    if(message !== '') throw new Error(message);
+    get_applications();
+};
+
 const main = async () => {
     const ValidToken = await check_valid_domain();
     if(!ValidToken) return;    
@@ -27,3 +33,4 @@ const main = async () => {
 
 main();
 document.getElementById('logout')?.addEventListener('click', _ => location.href = '/login');
+document.getElementById('create-application')?.addEventListener('click', _ => create_application());

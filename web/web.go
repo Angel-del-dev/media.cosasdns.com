@@ -25,6 +25,10 @@ func InitWebHandler(app *models.Application) {
 	mux.HandleFunc("/get-user-applications", func(writter http.ResponseWriter, request *http.Request) {
 		api.GetUserApplications(writter, request, app)
 	})
+
+	mux.HandleFunc("/create-application", func(writter http.ResponseWriter, request *http.Request) {
+		api.CreateApplication(writter, request, app)
+	})
 	// Other calls
 
 	mux.HandleFunc("/file/{application}/{resource}", func(writter http.ResponseWriter, request *http.Request) { api.GetResource(writter, request, app) })

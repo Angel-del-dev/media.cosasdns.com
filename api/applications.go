@@ -56,3 +56,45 @@ func GetUserApplications(writter http.ResponseWriter, request *http.Request, app
 	}{Applications: Applications, Token: token}
 	internal.WriteJsonToClient(result, writter, app)
 }
+
+func CreateApplication(writter http.ResponseWriter, request *http.Request, app *models.Application) {
+	token := internal.GetBearerToken(request)
+	if token == "" {
+		writter.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	db, error_bool := internal.DB(app)
+	if error_bool {
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	query := "SELECT USER FROM USERS WHERE TOKEN = ?"
+
+	User := 0
+	err := db.QueryRow(query, token).Scan(&User)
+	if err != nil || User == 0 {
+		internal.Log(app, "Could not obtain user from token")
+		writter.WriteHeader(http.StatusUnauthorized)
+		internal.ErrorText(app, writter, "Invalid credentials")
+	}
+
+	token = internal.RefreshToken(app, User)
+
+	stmt, err := db.Prepare("INSERT INTO APPLICATIONS (NAME) VALUES (?)")
+	if err != nil {
+		internal.Log(app, "Could not create prepared statement for APPLICATION creation")
+	}
+
+	_, err = stmt.Exec(token, internal.GenerateRandomString(10))
+	if err != nil {
+		internal.Log(app, "Could not execute APPLICATION creation")
+	}
+
+	// TODO assign a set name to the application && create a link between a domain, an application and an user
+
+	result := struct {
+		Token string `json:"token"`
+	}{Token: token}
+	internal.WriteJsonToClient(result, writter, app)
+}

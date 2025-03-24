@@ -5,12 +5,22 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
 
 	"media.cosasdns.com/models"
 )
+
+func GenerateRandomString(length int) string {
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
+}
 
 func GetBearerToken(request *http.Request) string {
 	return strings.Trim(strings.Replace(request.Header.Get("Authorization"), "Bearer", "", -1), " ")
