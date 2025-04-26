@@ -17,24 +17,9 @@ func InitWebHandler(app *models.Application) {
 
 	mux := http.NewServeMux()
 
-	fs := http.FileServer(http.Dir("../static"))
-	mux.Handle("/public/", http.StripPrefix("/public/", fs))
-
-	// Api calls
-	mux.HandleFunc("/check-token", func(writter http.ResponseWriter, request *http.Request) { api.CheckToken(writter, request, app) })
-	mux.HandleFunc("/get-user-applications", func(writter http.ResponseWriter, request *http.Request) {
-		api.GetUserApplications(writter, request, app)
-	})
-
-	mux.HandleFunc("/create-application", func(writter http.ResponseWriter, request *http.Request) {
-		api.CreateApplication(writter, request, app)
-	})
-	// Other calls
-
 	mux.HandleFunc("/file/{application}/{resource}", func(writter http.ResponseWriter, request *http.Request) { api.GetResource(writter, request, app) })
 	mux.HandleFunc("/favicon.ico", doNothing)
 	mux.HandleFunc("/login", func(writter http.ResponseWriter, request *http.Request) { Login(writter, request, app) })
-	mux.HandleFunc("/panel", func(writter http.ResponseWriter, request *http.Request) { Panel(writter, request, app) })
 	mux.HandleFunc("/", func(writter http.ResponseWriter, request *http.Request) { ServeHome(writter, request, app) })
 
 	server := http.Server{

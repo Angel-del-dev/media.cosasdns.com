@@ -16,7 +16,7 @@ func ServeLogin(writter http.ResponseWriter, request *http.Request, app *models.
 
 func Login(writter http.ResponseWriter, request *http.Request, app *models.Application) {
 	if request.Method == "GET" {
-		ServeLogin(writter, request, app)
+		writter.WriteHeader(http.StatusNotFound)
 	} else {
 		api.HandleLogin(writter, request, app)
 	}

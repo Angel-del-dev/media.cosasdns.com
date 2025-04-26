@@ -4,3 +4,4 @@ logs/*
 *.exe
 files/*
 data.sql
+bin/*
