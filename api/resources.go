@@ -22,23 +22,18 @@ func GetResource(writter http.ResponseWriter, request *http.Request, app *models
 
 	defer db.Close()
 
-	query := "SELECT TYPE FROM RESOURCES WHERE APPLICATION_NAME = ?"
-	// If Origin is empty, it means the request is from the same origin as media.cosasdns.com
-	if request.Header.Get("Origin") != "" {
-		query += fmt.Sprintf(" AND DOMAIN = '%s'  ", request.Header.Get("Origin"))
-	}
-	query += " AND NAME = ? "
+	query := "SELECT R.RESOURCE FROM RESOURCESDOMAINS RD JOIN RESOURCES R ON RD.RESOURCE = R.RESOURCE WHERE RD.DOMAIN = ? AND RD.RESOURCE = ?"
 
-	file_type := ""
+	file_name := ""
 
-	query_error := db.QueryRow(query, request.PathValue("application"), request.PathValue("resource")).Scan(&file_type)
+	query_error := db.QueryRow(query, request.Header.Get("Origin"), request.PathValue("resource")).Scan(&file_name)
 	if query_error != nil {
 		internal.Log(app, fmt.Sprintf("Error obtaining resource '%s'", request.URL.Path))
 		writter.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	file_route := fmt.Sprintf("../files/%s/%s", request.PathValue("application"), request.PathValue("resource"))
+	file_route := fmt.Sprintf("../files/%s", request.PathValue("resource"))
 	file_bytes, file_error := os.ReadFile(file_route)
 
 	if file_error != nil {
@@ -47,6 +42,6 @@ func GetResource(writter http.ResponseWriter, request *http.Request, app *models
 	}
 
 	writter.WriteHeader(http.StatusFound)
-	writter.Header().Set("Content-Type", file_type)
+	writter.Header().Set("Content-Type", file_name)
 	writter.Write(file_bytes)
 }
