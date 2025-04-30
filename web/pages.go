@@ -18,6 +18,6 @@ func ServeHome(writter http.ResponseWriter, request *http.Request, app *models.A
 		}
 		return
 	}
-	// TODO Create home page
-	fmt.Fprintln(writter, "Home")
+	// Redirect to the api reference
+	http.Redirect(writter, request, "http://docs.angelnovo.es", http.StatusSeeOther)
 }
