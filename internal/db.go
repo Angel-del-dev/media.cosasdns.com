@@ -39,7 +39,7 @@ func DB(app *models.Application) (*sql.DB, bool) {
 	return db, false
 }
 
-func RefreshToken(app *models.Application, User int) string {
+func RefreshToken(app *models.Application, User string) string {
 	token := GenerateToken()
 
 	db, error_bool := DB(app)
@@ -47,15 +47,23 @@ func RefreshToken(app *models.Application, User int) string {
 		return ""
 	}
 
-	stmt, err := db.Prepare("UPDATE USERS SET TOKEN = ? WHERE USER = ?")
+	stmt, err := db.Prepare("INSERT INTO USERSTOKENS(USER, TOKEN) VALUES (?, ?)")
 	if err != nil {
 		Log(app, "Could not create prepared statement for token storage")
 	}
 
-	_, err = stmt.Exec(token, User)
+	_, err = stmt.Exec(User, token)
 	if err != nil {
 		Log(app, "Could not execute token storage")
 	}
+
+	// Remove expired tokens
+	removal_query := "DELETE FROM USERSTOKENS WHERE EXPIRE_AT <= CURRENT_TIMESTAMP"
+	insert, error := db.Query(removal_query)
+	if error != nil {
+		Log(app, "Cold not remove expired tokens")
+	}
+	defer insert.Close()
 
 	return token
 }

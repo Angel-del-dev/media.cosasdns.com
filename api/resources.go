@@ -13,7 +13,6 @@ import (
 // TODO Limit application max size (Based on a plan?)
 
 func GetResource(writter http.ResponseWriter, request *http.Request, app *models.Application) {
-	// Add method control and log
 	db, err := internal.DB(app)
 	if err {
 		writter.WriteHeader(http.StatusInternalServerError)
@@ -22,11 +21,11 @@ func GetResource(writter http.ResponseWriter, request *http.Request, app *models
 
 	defer db.Close()
 
-	query := "SELECT R.RESOURCE FROM RESOURCESDOMAINS RD JOIN RESOURCES R ON RD.RESOURCE = R.RESOURCE WHERE RD.DOMAIN = ? AND RD.RESOURCE = ?"
+	query := "SELECT R.TYPE FROM RESOURCESDOMAINS RD JOIN RESOURCES R ON RD.RESOURCE = R.RESOURCE WHERE RD.DOMAIN = ? AND RD.RESOURCE = ?"
 
-	file_name := ""
+	file_type := ""
 
-	query_error := db.QueryRow(query, request.Header.Get("Origin"), request.PathValue("resource")).Scan(&file_name)
+	query_error := db.QueryRow(query, request.Header.Get("Origin"), request.PathValue("resource")).Scan(&file_type)
 	if query_error != nil {
 		internal.Log(app, fmt.Sprintf("Error obtaining resource '%s'", request.URL.Path))
 		writter.WriteHeader(http.StatusNotFound)
@@ -42,6 +41,19 @@ func GetResource(writter http.ResponseWriter, request *http.Request, app *models
 	}
 
 	writter.WriteHeader(http.StatusFound)
-	writter.Header().Set("Content-Type", file_name)
+	writter.Header().Set("Content-Type", file_type)
 	writter.Write(file_bytes)
+}
+
+func addResource(writter http.ResponseWriter, request *http.Request, app *models.Application) {
+	fmt.Println("Add resource")
+}
+
+func Handle(writter http.ResponseWriter, request *http.Request, app *models.Application) {
+	if internal.CheckMethod(writter, request, "POST") {
+		addResource(writter, request, app)
+		return
+	}
+
+	writter.WriteHeader(http.StatusNotFound)
 }

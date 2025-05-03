@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"media.cosasdns.com/internal"
@@ -8,15 +10,17 @@ import (
 )
 
 func HandleLogin(writter http.ResponseWriter, request *http.Request, app *models.Application) {
-	err := request.ParseForm()
+	var login_params models.LoginParams
+
+	err := json.NewDecoder(request.Body).Decode(&login_params)
 	if err != nil {
+		fmt.Println(err)
 		internal.Log(app, "Could not parse login parameters")
 		writter.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	Username := request.PostForm.Get("User")
-	Password := request.PostForm.Get("Password")
+	Username := login_params.Username
+	Password := login_params.Password
 
 	if Username == "" || Password == "" {
 		writter.WriteHeader(http.StatusBadRequest)
@@ -28,11 +32,13 @@ func HandleLogin(writter http.ResponseWriter, request *http.Request, app *models
 		return
 	}
 
-	query := "SELECT USER FROM USERS WHERE NAME = ? AND PASSWORD = ?"
+	defer db.Close()
 
-	User := 0
+	query := "SELECT USER FROM USERS WHERE USER = ? AND PASSWORD = ?"
+
+	var User string
 	err = db.QueryRow(query, Username, internal.Hash(Password)).Scan(&User)
-	if err != nil || User == 0 {
+	if err != nil {
 		internal.Log(app, "Login failed, no user found'")
 		writter.WriteHeader(http.StatusBadRequest)
 		internal.ErrorText(app, writter, "Invalid credentials")
@@ -42,6 +48,7 @@ func HandleLogin(writter http.ResponseWriter, request *http.Request, app *models
 	token := internal.RefreshToken(app, User)
 	if token == "" {
 		writter.WriteHeader(http.StatusInternalServerError)
+		internal.ErrorText(app, writter, "Could not generate a new token")
 		return
 	}
 
@@ -49,4 +56,33 @@ func HandleLogin(writter http.ResponseWriter, request *http.Request, app *models
 		Token string `json:"token"`
 	}{Token: token}
 	internal.WriteJsonToClient(result, writter, app)
+}
+
+func AuthMiddleware(app *models.Application, callback func(http.ResponseWriter, *http.Request, *models.Application)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := internal.GetBearerToken(r)
+		if token == "" {
+			internal.Log(app, "Login failed, no user found'")
+			w.WriteHeader(http.StatusBadRequest)
+		}
+		db, err := internal.DB(app)
+		if err {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		defer db.Close()
+		query := "SELECT 1 TOKEN FROM USERSTOKENS WHERE TOKEN = ? AND EXPIRE_AT > CURRENT_TIMESTAMP LIMIT 1"
+		var db_token string
+		token_error := db.QueryRow(query, token).Scan(&db_token)
+		if token_error != nil {
+			internal.Log(app, "Invalid token")
+			w.WriteHeader(http.StatusBadRequest)
+			internal.ErrorText(app, w, "Invalid token")
+			return
+		}
+
+		// Check if the token is valid
+		callback(w, r, app)
+	}
 }
