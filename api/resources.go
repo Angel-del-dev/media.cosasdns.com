@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,6 +13,7 @@ import (
 
 // TODO Handle files with encryption/decryption
 // TODO Limit application max size (Based on a plan?)
+// TODO Add better error returning
 
 func GetResource(writter http.ResponseWriter, request *http.Request, app *models.Application) {
 	db, err := internal.DB(app)
@@ -46,7 +49,77 @@ func GetResource(writter http.ResponseWriter, request *http.Request, app *models
 }
 
 func addResource(writter http.ResponseWriter, request *http.Request, app *models.Application) {
-	fmt.Println("Add resource")
+	var resource_params models.ResourceParams
+
+	err := json.NewDecoder(request.Body).Decode(&resource_params)
+	if err != nil {
+		internal.Log(app, "Invalid resource parameters, please read the docs")
+		http.Error(writter, "Invalid resource parameters, please read the docs", http.StatusBadRequest)
+		return
+	}
+
+	if resource_params.MimeType == "" {
+		internal.Log(app, "MimeType must be provided")
+		http.Error(writter, "MimeType must be provided", http.StatusBadRequest)
+		return
+	}
+
+	decoded, error_b64 := base64.StdEncoding.DecodeString(resource_params.FileString)
+	if error_b64 != nil {
+		internal.Log(app, "The provided filestring is not a valid Base 64 encoded string")
+		http.Error(writter, "The provided filestring is not a valid Base 64 encoded string", http.StatusBadRequest)
+		return
+	}
+
+	db, db_err := internal.DB(app)
+	if db_err {
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	defer db.Close()
+
+	FileName := internal.GenerateRandomString(100)
+
+	// Save the resource to the db
+	stmt, err := db.Prepare("INSERT INTO RESOURCES (RESOURCE, TYPE) VALUES (?, ?)")
+	if err != nil {
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = stmt.Exec(FileName, resource_params.MimeType)
+	if err != nil {
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Link the resource to the current domain
+	stmt, err = db.Prepare("INSERT INTO RESOURCESDOMAINS (DOMAIN, RESOURCE) VALUES (?, ?)")
+	if err != nil {
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	_, err = stmt.Exec(request.Header.Get("Origin"), FileName)
+	if err != nil {
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// Save the file
+	current_directory, _ := os.Getwd()
+	file, err := os.Create(current_directory + "/../files/" + FileName)
+	if err != nil {
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(string(decoded))
+	if err != nil {
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func Handle(writter http.ResponseWriter, request *http.Request, app *models.Application) {

@@ -47,7 +47,7 @@ func RefreshToken(app *models.Application, User string) string {
 		return ""
 	}
 
-	stmt, err := db.Prepare("INSERT INTO USERSTOKENS(USER, TOKEN) VALUES (?, ?)")
+	stmt, err := db.Prepare("INSERT INTO USERSTOKENS(USER, TOKEN, EXPIRE_AT) VALUES (?, ?, DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 1 HOUR))")
 	if err != nil {
 		Log(app, "Could not create prepared statement for token storage")
 	}

@@ -16,14 +16,14 @@ func HandleLogin(writter http.ResponseWriter, request *http.Request, app *models
 	if err != nil {
 		fmt.Println(err)
 		internal.Log(app, "Could not parse login parameters")
-		writter.WriteHeader(http.StatusBadRequest)
+		http.Error(writter, "Invalid parameters", http.StatusBadRequest)
 		return
 	}
 	Username := login_params.Username
 	Password := login_params.Password
 
 	if Username == "" || Password == "" {
-		writter.WriteHeader(http.StatusBadRequest)
+		http.Error(writter, "Credentials cannot be empty", http.StatusBadRequest)
 		return
 	}
 	db, error_bool := internal.DB(app)
@@ -41,14 +41,15 @@ func HandleLogin(writter http.ResponseWriter, request *http.Request, app *models
 	if err != nil {
 		internal.Log(app, "Login failed, no user found'")
 		writter.WriteHeader(http.StatusBadRequest)
-		internal.ErrorText(app, writter, "Invalid credentials")
+		http.Error(writter, "Invalid credentials", http.StatusBadRequest)
 		return
 	}
 
 	token := internal.RefreshToken(app, User)
 	if token == "" {
 		writter.WriteHeader(http.StatusInternalServerError)
-		internal.ErrorText(app, writter, "Could not generate a new token")
+		// internal.ErrorText(app, writter, "Could not generate a new token")
+		http.Error(writter, "Could not generate a new token", http.StatusBadRequest)
 		return
 	}
 
@@ -60,6 +61,7 @@ func HandleLogin(writter http.ResponseWriter, request *http.Request, app *models
 
 func AuthMiddleware(app *models.Application, callback func(http.ResponseWriter, *http.Request, *models.Application)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// TODO Check if the given user has permissions over the requested domain
 		token := internal.GetBearerToken(r)
 		if token == "" {
 			internal.Log(app, "Login failed, no user found'")
@@ -77,12 +79,11 @@ func AuthMiddleware(app *models.Application, callback func(http.ResponseWriter, 
 		token_error := db.QueryRow(query, token).Scan(&db_token)
 		if token_error != nil {
 			internal.Log(app, "Invalid token")
-			w.WriteHeader(http.StatusBadRequest)
-			internal.ErrorText(app, w, "Invalid token")
+			// w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "Invalid token", http.StatusBadRequest)
 			return
 		}
 
-		// Check if the token is valid
 		callback(w, r, app)
 	}
 }
