@@ -48,7 +48,7 @@ func GetResource(writter http.ResponseWriter, request *http.Request, app *models
 	writter.Write(file_bytes)
 }
 
-func addResource(writter http.ResponseWriter, request *http.Request, app *models.Application) {
+func addResource(writter http.ResponseWriter, request *http.Request, app *models.Application, user string) {
 	var resource_params models.ResourceParams
 
 	err := json.NewDecoder(request.Body).Decode(&resource_params)
@@ -120,11 +120,22 @@ func addResource(writter http.ResponseWriter, request *http.Request, app *models
 		writter.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	token := internal.RefreshToken(app, user)
+	if token == "" {
+		writter.WriteHeader(http.StatusInternalServerError)
+		http.Error(writter, "Could not generate a new token", http.StatusBadRequest)
+		return
+	}
+	result := struct {
+		Token string `json:"token"`
+	}{Token: token}
+	internal.WriteJsonToClient(result, writter, app)
 }
 
-func Handle(writter http.ResponseWriter, request *http.Request, app *models.Application) {
+func Handle(writter http.ResponseWriter, request *http.Request, app *models.Application, user string) {
 	if internal.CheckMethod(writter, request, "POST") {
-		addResource(writter, request, app)
+		addResource(writter, request, app, user)
 		return
 	}
 

@@ -59,7 +59,7 @@ func HandleLogin(writter http.ResponseWriter, request *http.Request, app *models
 	internal.WriteJsonToClient(result, writter, app)
 }
 
-func AuthMiddleware(app *models.Application, callback func(http.ResponseWriter, *http.Request, *models.Application)) http.HandlerFunc {
+func AuthMiddleware(app *models.Application, callback func(http.ResponseWriter, *http.Request, *models.Application, string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// TODO Check if the given user has permissions over the requested domain
 		token := internal.GetBearerToken(r)
@@ -74,16 +74,15 @@ func AuthMiddleware(app *models.Application, callback func(http.ResponseWriter, 
 		}
 
 		defer db.Close()
-		query := "SELECT 1 TOKEN FROM USERSTOKENS WHERE TOKEN = ? AND EXPIRE_AT > CURRENT_TIMESTAMP LIMIT 1"
-		var db_token string
-		token_error := db.QueryRow(query, token).Scan(&db_token)
+		query := "SELECT USER FROM USERSTOKENS WHERE TOKEN = ? AND EXPIRE_AT > CURRENT_TIMESTAMP LIMIT 1"
+		var db_user string
+		token_error := db.QueryRow(query, token).Scan(&db_user)
 		if token_error != nil {
 			internal.Log(app, "Invalid token")
-			// w.WriteHeader(http.StatusBadRequest)
 			http.Error(w, "Invalid token", http.StatusBadRequest)
 			return
 		}
 
-		callback(w, r, app)
+		callback(w, r, app, db_user)
 	}
 }
