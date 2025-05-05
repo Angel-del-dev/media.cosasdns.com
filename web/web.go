@@ -22,6 +22,8 @@ func InitWebHandler(app *models.Application) {
 
 	mux.HandleFunc("/file/{resource}", func(writter http.ResponseWriter, request *http.Request) { api.GetResource(writter, request, app) })
 	mux.HandleFunc("/file/add-from-string", api.AuthMiddleware(app, api.Handle))
+	mux.HandleFunc("/file/all", api.AuthMiddleware(app, api.GetAll))
+	mux.HandleFunc("/file/all-from-type/{type}", api.AuthMiddleware(app, api.GetAllFromMime))
 
 	mux.HandleFunc("/favicon.ico", doNothing)
 	mux.HandleFunc("/login", func(writter http.ResponseWriter, request *http.Request) { Login(writter, request, app) })

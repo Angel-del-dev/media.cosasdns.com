@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"media.cosasdns.com/internal"
 	"media.cosasdns.com/models"
@@ -140,4 +141,63 @@ func Handle(writter http.ResponseWriter, request *http.Request, app *models.Appl
 	}
 
 	writter.WriteHeader(http.StatusNotFound)
+}
+
+func GetAllFromDomainAndMime(origin string, TYPE string, writter http.ResponseWriter, app *models.Application, user string) models.ResourceCatalog {
+	query := " SELECT RD.RESOURCE FROM RESOURCESDOMAINS RD LEFT JOIN RESOURCES R ON RD.RESOURCE = R.RESOURCE WHERE RD.DOMAIN = ? "
+
+	if TYPE != "" {
+		query += " AND (UPPER(R.TYPE) LIKE '" + TYPE + "/%' OR UPPER(R.TYPE) LIKE '%/" + TYPE + "') "
+	}
+
+	db, err := internal.DB(app)
+	if err {
+		writter.WriteHeader(http.StatusInternalServerError)
+		return models.ResourceCatalog{}
+	}
+
+	defer db.Close()
+
+	rows, query_error := db.Query(query, origin)
+	if query_error != nil {
+		internal.Log(app, fmt.Sprintf("Error obtaining resources from origin '%s'", origin))
+		writter.WriteHeader(http.StatusInternalServerError)
+		return models.ResourceCatalog{}
+	}
+
+	Resources := []string{}
+
+	for rows.Next() {
+		var resource_col string
+		rows.Scan(&resource_col)
+		Resources = append(Resources, resource_col)
+	}
+
+	token := internal.RefreshToken(app, user)
+	if token == "" {
+		writter.WriteHeader(http.StatusInternalServerError)
+		http.Error(writter, "Could not generate a new token", http.StatusBadRequest)
+		return models.ResourceCatalog{}
+	}
+
+	return models.ResourceCatalog{Token: token, Resources: Resources}
+}
+
+func GetAll(writter http.ResponseWriter, request *http.Request, app *models.Application, user string) {
+	if !internal.CheckMethod(writter, request, "GET") {
+		writter.WriteHeader(http.StatusNotFound)
+		return
+	}
+	result := GetAllFromDomainAndMime(request.Header.Get("Origin"), "", writter, app, user)
+	internal.WriteJsonToClient(result, writter, app)
+}
+
+func GetAllFromMime(writter http.ResponseWriter, request *http.Request, app *models.Application, user string) {
+	if !internal.CheckMethod(writter, request, "GET") {
+		writter.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	result := GetAllFromDomainAndMime(request.Header.Get("Origin"), strings.ToUpper(request.PathValue("type")), writter, app, user)
+	internal.WriteJsonToClient(result, writter, app)
 }
