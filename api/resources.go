@@ -201,3 +201,64 @@ func GetAllFromMime(writter http.ResponseWriter, request *http.Request, app *mod
 	result := GetAllFromDomainAndMime(request.Header.Get("Origin"), strings.ToUpper(request.PathValue("type")), writter, app, user)
 	internal.WriteJsonToClient(result, writter, app)
 }
+
+func RemoveFile(writter http.ResponseWriter, request *http.Request, app *models.Application, user string) {
+	if !internal.CheckMethod(writter, request, "DELETE") {
+		writter.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	db, err := internal.DB(app)
+	if err {
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	defer db.Close()
+
+	query := "DELETE FROM RESOURCESDOMAINS WHERE DOMAIN = ? AND RESOURCE = ?"
+
+	// Removal of the link -> resource/domain
+
+	_, query_error := db.Exec(query, request.Header.Get("Origin"), request.PathValue("resource"))
+	if query_error != nil {
+		internal.Log(app, fmt.Sprintf("Error unlinking resource '%s'", request.PathValue("resource")))
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Get count of the domains with the resource
+	CountRemainingDomains := 0
+	query = "SELECT COUNT(1) FROM RESOURCESDOMAINS WHERE DOMAIN = ? AND RESOURCE = ?"
+	query_error = db.QueryRow(query, request.Header.Get("Origin"), request.PathValue("resource")).Scan(&CountRemainingDomains)
+	if query_error != nil {
+		internal.Log(app, fmt.Sprintf("Error counting resource '%s' domains", request.PathValue("resource")))
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if CountRemainingDomains > 0 {
+		writter.WriteHeader(http.StatusOK)
+		return
+	}
+	// Remove File / Delete resource
+
+	query = "DELETE FROM RESOURCES WHERE RESOURCE = ?"
+	_, query_error = db.Exec(query, request.PathValue("resource"))
+	if query_error != nil {
+		internal.Log(app, fmt.Sprintf("Error removing resource '%s'", request.PathValue("resource")))
+		writter.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	filePath := fmt.Sprintf("../files/%s", request.PathValue("resource"))
+	if _, err := os.Stat(filePath); !os.IsNotExist(err) {
+		err := os.Remove(filePath)
+		if err != nil {
+			internal.Log(app, fmt.Sprintf("Error removing file '%s'", request.PathValue("resource")))
+			writter.WriteHeader(http.StatusInternalServerError)
+		}
+	}
+
+	writter.WriteHeader(http.StatusOK)
+}
